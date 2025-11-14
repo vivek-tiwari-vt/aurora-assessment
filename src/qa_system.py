@@ -462,23 +462,45 @@ class QuestionAnsweringSystem:
                 # Get user/member name for matching
                 user_name = (msg_data.get("user_name") or msg_data.get("member_name") or msg_data.get("name") or "").lower()
                 
-                # CRITICAL: If question has critical keywords (locations, proper nouns), they MUST be in the message
+                # CRITICAL: If question has critical keywords (locations, proper nouns), they SHOULD be in the message
                 # For proper nouns (names), also check user_name/member_name fields
+                # More lenient: require at least 50% of critical keywords to match (or at least 1 if only 1-2 keywords)
                 if critical_keywords:
+                    matched_critical = []
                     missing_critical = []
                     for ck in critical_keywords:
+                        # Check in message text (case-insensitive)
                         if ck in msg_text_lower:
+                            matched_critical.append(ck)
+                            logger.debug(f"  Found critical keyword '{ck}' in message text")
                             continue
-                        elif user_name and ck in user_name:
-                            logger.debug(f"  Found critical keyword '{ck}' in user_name: {user_name}")
-                            continue
-                        else:
-                            missing_critical.append(ck)
+                        # Check in user_name (case-insensitive, also check as whole word)
+                        elif user_name:
+                            # Check if keyword is in user_name (as substring or whole word)
+                            if ck in user_name or user_name in ck:
+                                matched_critical.append(ck)
+                                logger.debug(f"  Found critical keyword '{ck}' in user_name: {user_name}")
+                                continue
+                            # Also try case-insensitive whole-word matching
+                            user_name_words = user_name.split()
+                            ck_words = ck.split()
+                            if any(ckw in user_name_words or userw in ckw for ckw in ck_words for userw in user_name_words):
+                                matched_critical.append(ck)
+                                logger.debug(f"  Found critical keyword '{ck}' as word in user_name: {user_name}")
+                                continue
+                        
+                        missing_critical.append(ck)
                     
-                    if missing_critical:
+                    # More lenient filtering: require at least 50% match, or at least 1 keyword if only 1-2 keywords total
+                    total_critical = len(critical_keywords)
+                    min_required = max(1, int(total_critical * 0.5)) if total_critical > 2 else 1
+                    
+                    if len(matched_critical) < min_required:
                         skipped_critical += 1
-                        logger.debug(f"  [SKIP] Message {idx}: missing critical keywords {missing_critical}. User: {user_name}, Content: {msg_content[:80]}...")
+                        logger.debug(f"  [SKIP] Message {idx}: matched {len(matched_critical)}/{total_critical} critical keywords (need {min_required}). Matched: {matched_critical}, Missing: {missing_critical}. User: {user_name}, Content: {msg_content[:80]}...")
                         continue
+                    else:
+                        logger.debug(f"  [PASS] Message {idx}: matched {len(matched_critical)}/{total_critical} critical keywords: {matched_critical}")
                 
                 # Count matching keywords (also check for partial matches and synonyms)
                 matching_keywords = 0
