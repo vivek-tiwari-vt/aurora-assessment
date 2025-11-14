@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: aurora-qa-system
+    runtime: docker
+    plan: free
+    numInstances: 1
+    
+    # Build configuration
+    dockerfilePath: ./docker/Dockerfile
+    
+    # Environment
+    envVars:
+      - key: LOG_LEVEL
+        value: INFO
+        
+      # Add your Gemini API keys here
+      # Format: key1,key2,key3
+      - key: GEMINI_API_KEYS
+        scope: RUN
+        sync: false
+    
+    # Health check
+    healthCheckPath: /api
+    healthCheckInterval: 30
+    
+    # Auto-deploy on git push
+    autoDeploy: true
+    
+    # Scaling
+    maxInstanceCount: 1
+    minInstanceCount: 1
+
+# Crons (optional - for scheduled tasks)
+# crons:
+#   - id: data-refresh
+#     schedule: "0 0 * * *"  # Daily at midnight
+#     command: "curl https://aurora-qa-system.onrender.com/api/health"
+
