@@ -344,7 +344,10 @@ class QuestionAnsweringSystem:
             for word in question_words_original:
                 clean_word = word.strip(".,!?;:'\"()[]{}")
                 if len(clean_word) > 2 and clean_word[0].isupper():
-                    common_caps = {"The", "A", "An", "And", "Or", "But", "In", "On", "At", "To", "For", "Of", "With", "By", "What", "When", "Where", "Who", "Which", "How", "Does", "Do", "Did", "Will", "Would", "Can", "Could", "Should", "May", "Might"}
+                    # Common capitalized words that are NOT proper nouns
+                    common_caps = {"The", "A", "An", "And", "Or", "But", "In", "On", "At", "To", "For", "Of", "With", "By", 
+                                  "What", "When", "Where", "Who", "Which", "How", "Does", "Do", "Did", "Will", "Would", 
+                                  "Can", "Could", "Should", "May", "Might", "Tell", "Have", "Has", "Had", "Are", "Is", "Was", "Were"}
                     if clean_word not in common_caps:
                         base_word = clean_word.rstrip("'s").rstrip("'")
                         base_lower = base_word.lower()
@@ -358,8 +361,14 @@ class QuestionAnsweringSystem:
             question_lower = question.lower()
             question_type = self._detect_question_type(question_lower)
             question_words = set(question_lower.split())
-            # Remove common stop words
-            stop_words = {"is", "are", "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "what", "when", "where", "who", "which", "how", "does", "do", "did", "will", "would", "can", "could", "should", "may", "might", "planning", "her", "his", "their", "my", "your", "s", "'s"}
+            # Remove common stop words (expanded list to include common verbs and prepositions)
+            stop_words = {"is", "are", "was", "were", "be", "been", "being", "the", "a", "an", "and", "or", "but", 
+                         "in", "on", "at", "to", "for", "of", "with", "by", "from", "about", "into", "onto", 
+                         "what", "when", "where", "who", "which", "how", "does", "do", "did", "will", "would", 
+                         "can", "could", "should", "may", "might", "must", "shall", "tell", "me", "about", 
+                         "planning", "her", "his", "their", "my", "your", "our", "its", "it", "they", "them", 
+                         "we", "us", "have", "has", "had", "having", "s", "'s", "this", "that", "these", "those",
+                         "both", "mentioned", "mention", "mentioned", "information", "have", "has"}
             question_keywords = question_words - stop_words
             # Clean punctuation from keywords
             question_keywords = {kw.rstrip(".,!?;:'\"()[]{}") for kw in question_keywords}
@@ -369,8 +378,14 @@ class QuestionAnsweringSystem:
             # Common location names and important entities
             critical_keywords = set()
             question_locations: List[str] = []
-            # Add proper nouns as critical keywords
-            critical_keywords.update(proper_nouns)
+            
+            # Filter out common verbs/words from proper nouns before adding to critical keywords
+            # Only keep actual proper nouns (names, places) and filter out verbs that were capitalized
+            common_verb_words = {"tell", "me", "about", "have", "has", "had", "are", "is", "was", "were", "planning", "mentioned", "mention"}
+            filtered_proper_nouns = {pn for pn in proper_nouns if pn not in common_verb_words}
+            
+            # Add proper nouns as critical keywords (after filtering)
+            critical_keywords.update(filtered_proper_nouns)
             
             # Extract locations from question
             for keyword in question_keywords:
@@ -422,10 +437,11 @@ class QuestionAnsweringSystem:
             
             # Set adaptive distance threshold based on whether we have critical keywords
             # Adaptive threshold: more lenient if we have critical keywords (they'll filter), stricter otherwise
+            # For general questions without critical keywords, be more lenient since we rely on semantic similarity
             if critical_keywords:
                 MAX_DISTANCE_THRESHOLD = 1.3  # Slightly more lenient when we have critical keywords to filter
             else:
-                MAX_DISTANCE_THRESHOLD = 1.2  # Standard threshold
+                MAX_DISTANCE_THRESHOLD = 1.5  # More lenient for general questions (increased from 1.2 to 1.5)
             
             logger.debug(f"Step 4: Filtering messages (distance threshold: {MAX_DISTANCE_THRESHOLD}, adaptive keyword match)")
             relevant_messages = []
