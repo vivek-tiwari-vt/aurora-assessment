@@ -540,18 +540,14 @@ class QuestionAnsweringSystem:
                     min_keyword_match = 0.3   # Standard threshold
                 
                 # Require minimum keyword match for questions with specific keywords
-                # But if we found critical keywords, we're already filtering by relevance, so be lenient
+                # BUT: If we already passed critical keyword check, be very lenient on general keyword match
+                # Critical keywords already ensure relevance
                 if len(question_keywords) > 2 and keyword_match_ratio < min_keyword_match:
-                    # If we have critical keywords and they matched, don't skip based on general keyword match
+                    # If we have critical keywords and they already matched (we passed that check), skip keyword match check
                     if critical_keywords:
-                        # Check if critical keywords were found - if yes, allow through even with low general keyword match
-                        critical_found_in_msg = sum(1 for ck in critical_keywords if ck in msg_text_lower or (user_name and ck in user_name))
-                        if critical_found_in_msg > 0:
-                            logger.debug(f"  [KEEP] Message {idx}: critical keywords matched, allowing despite low keyword match {keyword_match_ratio:.2f}")
-                        else:
-                            skipped_keyword += 1
-                            logger.debug(f"  [SKIP] Message {idx}: keyword match {keyword_match_ratio:.2f} < {min_keyword_match}. Content: {msg_content[:80]}...")
-                            continue
+                        # We already passed critical keyword check above, so allow through
+                        # This prevents double-filtering: if critical keywords matched, trust that
+                        logger.debug(f"  [KEEP] Message {idx}: critical keywords already matched, allowing despite low keyword match {keyword_match_ratio:.2f}")
                     else:
                         skipped_keyword += 1
                         logger.debug(f"  [SKIP] Message {idx}: keyword match {keyword_match_ratio:.2f} < {min_keyword_match}. Content: {msg_content[:80]}...")
@@ -651,12 +647,12 @@ IMPORTANT: Verify that your answer directly addresses the question "{question}".
 
 Answer directly (just the answer, no extra text):"""
                     
-                    # Use only gemini-2.5-flash-exp model
+                    # Use only gemini-2.0-flash-exp model (latest experimental version)
                     model_name = None
                     answer = None
                     
-                    # Use only gemini-2.5-flash-exp model
-                    model_option = 'gemini-2.5-flash-exp'
+                    # Use only gemini-2.0-flash-exp model (correct name - 2.5 doesn't exist yet)
+                    model_option = 'gemini-2.0-flash-exp'
                     
                     logger.debug(f"Using Gemini model: {model_option}")
                     try:
