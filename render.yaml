@@ -6,7 +6,7 @@ services:
     numInstances: 1
     
     # Build configuration
-    dockerfilePath: ./Dockerfile
+    dockerfilePath: ./docker/Dockerfile
     
     # Environment
     envVars:
