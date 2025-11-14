@@ -469,27 +469,39 @@ class QuestionAnsweringSystem:
                     matched_critical = []
                     missing_critical = []
                     for ck in critical_keywords:
-                        # Check in message text (case-insensitive)
-                        if ck in msg_text_lower:
-                            matched_critical.append(ck)
-                            logger.debug(f"  Found critical keyword '{ck}' in message text")
-                            continue
-                        # Check in user_name (case-insensitive, also check as whole word)
-                        elif user_name:
-                            # Check if keyword is in user_name (as substring or whole word)
-                            if ck in user_name or user_name in ck:
-                                matched_critical.append(ck)
-                                logger.debug(f"  Found critical keyword '{ck}' in user_name: {user_name}")
-                                continue
-                            # Also try case-insensitive whole-word matching
-                            user_name_words = user_name.split()
-                            ck_words = ck.split()
-                            if any(ckw in user_name_words or userw in ckw for ckw in ck_words for userw in user_name_words):
-                                matched_critical.append(ck)
-                                logger.debug(f"  Found critical keyword '{ck}' as word in user_name: {user_name}")
-                                continue
+                        matched = False
+                        match_location = None
                         
-                        missing_critical.append(ck)
+                        # Check in message text (case-insensitive) - split into words for better matching
+                        msg_words = msg_text_lower.split()
+                        ck_words = ck.split()
+                        
+                        # Check if all words of keyword are in message (better for multi-word keywords like "new york")
+                        if all(any(ckw in word or word in ckw or ckw in word[:len(ckw)+2] for word in msg_words) for ckw in ck_words):
+                            matched_critical.append(ck)
+                            matched = True
+                            match_location = "message text"
+                            logger.debug(f"  Found critical keyword '{ck}' in message text")
+                        
+                        # Also check in user_name (case-insensitive) - check as whole name or word match
+                        if not matched and user_name:
+                            user_name_words = user_name.split()
+                            # Check if keyword matches user_name (exact or partial)
+                            # For names: "amira" should match "amira van den berg"
+                            if ck in user_name:
+                                matched_critical.append(ck)
+                                matched = True
+                                match_location = f"user_name ({user_name})"
+                                logger.debug(f"  Found critical keyword '{ck}' in user_name: {user_name}")
+                            # Check word-by-word matching
+                            elif any(ckw in user_name_words for ckw in ck_words):
+                                matched_critical.append(ck)
+                                matched = True
+                                match_location = f"user_name words ({user_name})"
+                                logger.debug(f"  Found critical keyword '{ck}' as word in user_name: {user_name}")
+                        
+                        if not matched:
+                            missing_critical.append(ck)
                     
                     # More lenient filtering: require at least 50% match, or at least 1 keyword if only 1-2 keywords total
                     total_critical = len(critical_keywords)
@@ -500,7 +512,7 @@ class QuestionAnsweringSystem:
                         logger.debug(f"  [SKIP] Message {idx}: matched {len(matched_critical)}/{total_critical} critical keywords (need {min_required}). Matched: {matched_critical}, Missing: {missing_critical}. User: {user_name}, Content: {msg_content[:80]}...")
                         continue
                     else:
-                        logger.debug(f"  [PASS] Message {idx}: matched {len(matched_critical)}/{total_critical} critical keywords: {matched_critical}")
+                        logger.info(f"  [PASS] Message {idx}: matched {len(matched_critical)}/{total_critical} critical keywords: {matched_critical}. User: {user_name}")
                 
                 # Count matching keywords (also check for partial matches and synonyms)
                 matching_keywords = 0
@@ -644,7 +656,8 @@ Answer directly (just the answer, no extra text):"""
                     answer = None
                     
                     # Try models in order of preference (newest first)
-                    model_options = ['gemini-2.0-flash-exp', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
+                    # Use stable model names that work with Google Gemini API
+                    model_options = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-pro-latest', 'gemini-1.5-pro', 'gemini-pro']
                     
                     logger.debug(f"Trying Gemini models in order: {model_options}")
                     for model_option in model_options:
