@@ -19,11 +19,14 @@ COPY requirements.txt requirements-no-torch.txt ./
 
 # Use BuildKit cache mount for pip cache (faster rebuilds)
 # Install torch CPU-only first (~200MB vs ~4GB with CUDA) - MUCH FASTER!
-# Then install other dependencies
+# This avoids downloading 4GB of CUDA libraries when CPU-only is sufficient
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --upgrade pip setuptools wheel && \
     pip install --user --index-url https://download.pytorch.org/whl/cpu \
-    torch>=2.4.0 && \
+    torch>=2.4.0
+
+# Install other dependencies (torch already installed, will be skipped)
+RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --user -r requirements-no-torch.txt
 
 # Stage 2: Runtime image (smaller and faster)
