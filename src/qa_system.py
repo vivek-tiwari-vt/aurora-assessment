@@ -651,38 +651,34 @@ IMPORTANT: Verify that your answer directly addresses the question "{question}".
 
 Answer directly (just the answer, no extra text):"""
                     
-                    # Try newer models first, fallback to gemini-pro
+                    # Use only gemini-2.5-flash-exp model
                     model_name = None
                     answer = None
                     
-                    # Try models in order of preference (newest first)
-                    # Use stable model names that work with Google Gemini API
-                    model_options = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-1.5-pro-latest', 'gemini-1.5-pro', 'gemini-pro']
+                    # Use only gemini-2.5-flash-exp model
+                    model_option = 'gemini-2.5-flash-exp'
                     
-                    logger.debug(f"Trying Gemini models in order: {model_options}")
-                    for model_option in model_options:
-                        try:
-                            logger.debug(f"Attempting to use model: {model_option}")
-                            model = genai.GenerativeModel(model_option)
-                            response = model.generate_content(
-                                prompt,
-                                generation_config=genai.types.GenerationConfig(
-                                    temperature=0.2,
-                                    max_output_tokens=150,
-                                    top_p=0.8,
-                                )
+                    logger.debug(f"Using Gemini model: {model_option}")
+                    try:
+                        model = genai.GenerativeModel(model_option)
+                        response = model.generate_content(
+                            prompt,
+                            generation_config=genai.types.GenerationConfig(
+                                temperature=0.2,
+                                max_output_tokens=150,
+                                top_p=0.8,
                             )
-                            answer = response.text.strip()
-                            model_name = model_option
-                            logger.info(f"✓ Successfully used Gemini model: {model_option}")
-                            logger.debug(f"Raw Gemini response: {answer[:200]}...")
-                            break
-                        except Exception as model_error:
-                            logger.warning(f"✗ Model {model_option} failed: {str(model_error)}, trying next...")
-                            continue
+                        )
+                        answer = response.text.strip()
+                        model_name = model_option
+                        logger.info(f"✓ Successfully used Gemini model: {model_option}")
+                        logger.debug(f"Raw Gemini response: {answer[:200]}...")
+                    except Exception as model_error:
+                        logger.error(f"✗ Model {model_option} failed: {str(model_error)}")
+                        raise Exception(f"Gemini model {model_option} failed: {str(model_error)}")
                     
                     if not answer:
-                        raise Exception("All Gemini models failed")
+                        raise Exception(f"Gemini model {model_option} returned empty response")
                     
                     # Clean up the answer - remove common prefixes
                     answer = answer.strip()
