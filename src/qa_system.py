@@ -5,9 +5,7 @@ from typing import List, Dict, Any, Tuple
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import faiss
-import google.generativeai as genai
 import logging
-from itertools import cycle
 from pathlib import Path
 
 # Get project root directory (needed for logging setup)
@@ -122,52 +120,35 @@ RESTAURANT_AT_PATTERN = re.compile(
     r"\bat\s+([A-Z][\w&'’.-]*(?:\s+[A-Z][\w&'’.-]*){0,3})"
 )
 
-class GeminiKeyRotator:
-    """Manages multiple Gemini API keys with round-robin rotation"""
+class OpenRouterKeyRotator:
+    """Manages OpenRouter API key"""
     
     def __init__(self):
-        self.keys = []
-        self.current_key_index = 0
-        self.key_cycle = None
-        self._load_keys()
+        self.api_key = None
+        self.model = "moonshotai/kimi-k2:free"
+        self._load_key()
     
-    def _load_keys(self):
-        """Load all Gemini API keys from environment"""
-        # Support both comma-separated and numbered env vars
-        env_keys = os.getenv("GEMINI_API_KEYS", "").split(",")
-        env_keys = [k.strip() for k in env_keys if k.strip()]
+    def _load_key(self):
+        """Load OpenRouter API key from environment"""
+        api_key = os.getenv("OPENROUTER_API_KEY", "").strip()
         
-        # Also support GEMINI_API_KEY_1, GEMINI_API_KEY_2, etc.
-        index = 1
-        while True:
-            key = os.getenv(f"GEMINI_API_KEY_{index}")
-            if not key:
-                break
-            env_keys.append(key)
-            index += 1
-        
-        if not env_keys:
-            logger.warning("No Gemini API keys found. Set GEMINI_API_KEYS or GEMINI_API_KEY_1, GEMINI_API_KEY_2, etc.")
-            logger.warning("System will start but question answering will fail without API keys.")
-            # Allow system to start without keys for testing/model loading
-            self.keys = []
-            self.key_cycle = None
+        if not api_key:
+            logger.warning("No OpenRouter API key found. Set OPENROUTER_API_KEY environment variable.")
+            logger.warning("System will start but question answering will fail without API key.")
+            self.api_key = None
         else:
-            self.keys = env_keys
-            self.key_cycle = cycle(self.keys)
-            logger.info(f"Loaded {len(self.keys)} Gemini API keys")
+            self.api_key = api_key
+            logger.info(f"Loaded OpenRouter API key (model: {self.model})")
     
-    def get_next_key(self) -> str:
-        """Get next API key in rotation"""
-        if not self.key_cycle:
-            raise ValueError("No API keys available. Please set GEMINI_API_KEYS environment variable.")
-        return next(self.key_cycle)
+    def get_api_key(self) -> str:
+        """Get API key"""
+        if not self.api_key:
+            raise ValueError("No API key available. Please set OPENROUTER_API_KEY environment variable.")
+        return self.api_key
     
-    def get_current_key(self) -> str:
-        """Get current API key"""
-        if not self.keys:
-            raise ValueError("No API keys available. Please set GEMINI_API_KEYS environment variable.")
-        return self.keys[self.current_key_index % len(self.keys)]
+    def get_model(self) -> str:
+        """Get model name"""
+        return self.model
 
 
 class QuestionAnsweringSystem:
@@ -186,8 +167,8 @@ class QuestionAnsweringSystem:
         """Initialize the QA system"""
         try:
             # Initialize key rotator
-            logger.info("Initializing Gemini API key rotator...")
-            self.key_rotator = GeminiKeyRotator()
+            logger.info("Initializing OpenRouter API key rotator...")
+            self.key_rotator = OpenRouterKeyRotator()
             
             # 1. Load embedding model (will be stored in data/models/)
             logger.info(f"Loading embedding model (storing in {MODELS_DIR})...")
@@ -310,7 +291,7 @@ class QuestionAnsweringSystem:
             raise
     
     async def answer_question(self, question: str, top_k: int = 5) -> Dict[str, Any]:
-        """Answer a question using RAG with Gemini"""
+        """Answer a question using RAG with OpenRouter"""
         try:
             logger.info(f"=== Processing question: '{question}' ===")
             
@@ -608,14 +589,14 @@ class QuestionAnsweringSystem:
             context = "\n".join(context_parts)
             logger.debug(f"Total context length: {len(context)} characters")
             
-            # 5. Generate answer using Gemini or format context-based answer
+            # 5. Generate answer using OpenRouter or format context-based answer
             # Track which messages were actually used for the answer
             answer_messages = relevant_messages  # Default to all relevant messages
             
-            logger.debug(f"Step 6: Generating answer (API keys available: {bool(self.key_rotator and self.key_rotator.keys)})")
+            logger.debug(f"Step 6: Generating answer (API key available: {bool(self.key_rotator and self.key_rotator.api_key)})")
             
-            if not self.key_rotator or not self.key_rotator.keys:
-                logger.warning("No Gemini API keys available - using fallback answer generation")
+            if not self.key_rotator or not self.key_rotator.api_key:
+                logger.warning("No OpenRouter API key available - using fallback answer generation")
                 # Format a clean answer from context when API keys are missing
                 if relevant_messages:
                     matching_messages = relevant_messages
@@ -636,9 +617,10 @@ class QuestionAnsweringSystem:
                     logger.warning("Fallback: No relevant messages available")
             else:
                 try:
-                    api_key = self.key_rotator.get_next_key()
-                    logger.debug(f"Using Gemini API key (rotating through {len(self.key_rotator.keys)} keys)")
-                    genai.configure(api_key=api_key)
+                    api_key = self.key_rotator.get_api_key()
+                    model_name = self.key_rotator.get_model()
+                    logger.debug(f"Using OpenRouter API with model: {model_name}")
+                    
                     # Improved system prompt for direct, concise answers
                     # Use previously detected question type to guide the answer
                     logger.debug(f"Question type detected: {question_type}")
@@ -663,34 +645,43 @@ IMPORTANT: Verify that your answer directly addresses the question "{question}".
 
 Answer directly (just the answer, no extra text):"""
                     
-                    # Use only gemini-2.0-flash-exp model (latest experimental version)
-                    model_name = None
-                    answer = None
+                    # Call OpenRouter API
+                    openrouter_url = "https://openrouter.ai/api/v1/chat/completions"
+                    headers = {
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                        "HTTP-Referer": "https://github.com/aurora_assessment",
+                        "X-Title": "Aurora Q&A System"
+                    }
                     
-                    # Use only gemini-2.0-flash-exp model (correct name - 2.5 doesn't exist yet)
-                    model_option = 'gemini-2.0-flash-exp'
+                    payload = {
+                        "model": model_name,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": prompt
+                            }
+                        ],
+                        "temperature": 0.2,
+                        "max_tokens": 150,
+                        "top_p": 0.8
+                    }
                     
-                    logger.debug(f"Using Gemini model: {model_option}")
-                    try:
-                        model = genai.GenerativeModel(model_option)
-                        response = model.generate_content(
-                            prompt,
-                            generation_config=genai.types.GenerationConfig(
-                                temperature=0.2,
-                                max_output_tokens=150,
-                                top_p=0.8,
-                            )
-                        )
-                        answer = response.text.strip()
-                        model_name = model_option
-                        logger.info(f"✓ Successfully used Gemini model: {model_option}")
-                        logger.debug(f"Raw Gemini response: {answer[:200]}...")
-                    except Exception as model_error:
-                        logger.error(f"✗ Model {model_option} failed: {str(model_error)}")
-                        raise Exception(f"Gemini model {model_option} failed: {str(model_error)}")
+                    async with httpx.AsyncClient(timeout=30.0) as client:
+                        response = await client.post(openrouter_url, headers=headers, json=payload)
+                        response.raise_for_status()
+                        result = response.json()
+                        
+                        # Extract answer from OpenRouter response
+                        if "choices" in result and len(result["choices"]) > 0:
+                            answer = result["choices"][0]["message"]["content"].strip()
+                            logger.info(f"✓ Successfully used OpenRouter model: {model_name}")
+                            logger.debug(f"Raw OpenRouter response: {answer[:200]}...")
+                        else:
+                            raise Exception(f"OpenRouter API returned unexpected response format: {result}")
                     
                     if not answer:
-                        raise Exception(f"Gemini model {model_option} returned empty response")
+                        raise Exception(f"OpenRouter model {model_name} returned empty response")
                     
                     # Clean up the answer - remove common prefixes
                     answer = answer.strip()
@@ -710,7 +701,7 @@ Answer directly (just the answer, no extra text):"""
                             answer = answer.lstrip(',: ')
                             break
                 except Exception as e:
-                    logger.error(f"Error calling Gemini API: {str(e)}", exc_info=True)
+                    logger.error(f"Error calling OpenRouter API: {str(e)}", exc_info=True)
                     logger.info("Falling back to context-based answer generation")
                     # Fallback: Try to extract answer from context intelligently
                     if relevant_messages:
@@ -1169,8 +1160,8 @@ Answer directly (just the answer, no extra text):"""
             "index_size": self.index.ntotal if self.index else 0,
             "embedding_model": "all-MiniLM-L6-v2",
             "vector_db": "FAISS",
-            "llm_model": "Gemini Pro",
-            "api_keys_loaded": len(self.key_rotator.keys) if self.key_rotator else 0,
+            "llm_model": self.key_rotator.get_model() if self.key_rotator else "moonshotai/kimi-k2:free",
+            "api_key_loaded": bool(self.key_rotator and self.key_rotator.api_key),
             "status": "ready" if self.index else "not_initialized",
             "models_dir": str(MODELS_DIR),
             "data_dir": str(DATA_DIR)

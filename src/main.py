@@ -151,7 +151,7 @@ async def health_check():
         "messages_indexed": qa_system.num_messages,
         "embedding_dimension": qa_system.embeddings.shape[1] if qa_system.embeddings is not None else 0,
         "index_built": qa_system.index is not None,
-        "api_keys_active": len(qa_system.key_rotator.keys) if qa_system.key_rotator and qa_system.key_rotator.keys else 0
+        "api_key_active": bool(qa_system.key_rotator and qa_system.key_rotator.api_key)
     }
 
 

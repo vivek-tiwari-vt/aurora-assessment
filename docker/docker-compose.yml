@@ -9,7 +9,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - GEMINI_API_KEYS=${GEMINI_API_KEYS}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - LOG_LEVEL=INFO
       - PORT=8000
       - SENTENCE_TRANSFORMERS_HOME=/app/data/models
