@@ -74,7 +74,7 @@ check_prerequisites() {
     fi
     
     if [ ! -f ".env" ]; then
-        print_warning ".env file not found. Make sure to create it with GEMINI_API_KEYS"
+        print_warning ".env file not found. Make sure to create it with OPENROUTER_API_KEY"
     else
         print_success ".env file exists"
     fi

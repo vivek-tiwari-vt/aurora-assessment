@@ -35,7 +35,7 @@
 5. **Environment Variables**
    Click "Advanced" and add:
    - `LOG_LEVEL` = `INFO`
-   - `GEMINI_API_KEYS` = `your_actual_gemini_api_key_here` (comma-separated for multiple keys)
+   - `OPENROUTER_API_KEY` = `your_actual_openrouter_api_key_here`
 
 6. **Deploy**
    - Click "Create Web Service"
@@ -59,7 +59,7 @@ If Render supports Blueprint import:
 - ⚠️ Limited bandwidth included
 
 ### After Deployment:
-1. Update `GEMINI_API_KEYS` environment variable with your actual API key
+1. Update `OPENROUTER_API_KEY` environment variable with your actual API key
 2. Test the deployment: `https://aurora-qa-system.onrender.com/api`
 3. The service will auto-deploy on every git push (if auto-deploy is enabled)
 
@@ -71,7 +71,7 @@ If Render supports Blueprint import:
 - Check build logs in Render dashboard
 
 ### Service Won't Start:
-- Verify `GEMINI_API_KEYS` is set correctly
+- Verify `OPENROUTER_API_KEY` is set correctly
 - Check application logs in Render dashboard
 - Ensure port 8000 is exposed (already configured in Dockerfile)
 

@@ -1,6 +1,6 @@
 # Aurora Q&A System
 
-An intelligent question-answering system powered by FastAPI, Sentence Transformers, FAISS, and Google Gemini AI. This RAG (Retrieval-Augmented Generation) system provides conversational answers to questions about member messages and preferences.
+An intelligent question-answering system powered by FastAPI, Sentence Transformers, FAISS, and OpenRouter AI. This RAG (Retrieval-Augmented Generation) system provides conversational answers to questions about member messages and preferences.
 
 ## 🚀 Quick Start
 
@@ -11,8 +11,8 @@ source venv/bin/activate
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Create .env file with your Gemini API keys
-echo "GEMINI_API_KEYS=your_key_1,your_key_2" > .env
+# 3. Create .env file with your OpenRouter API key
+echo "OPENROUTER_API_KEY=your_api_key_here" > .env
 
 # 4. Run the application
 python src/main.py
@@ -25,7 +25,7 @@ Visit `http://localhost:8000` to use the chatbot interface.
 - **RAG-based Q&A**: Retrieval-Augmented Generation for accurate, conversational answers
 - **Semantic Search**: FAISS vector database for fast similarity search
 - **Conversational Responses**: Natural language answers instead of raw data dumps
-- **API Key Rotation**: Automatic rotation through multiple Gemini API keys
+- **OpenRouter Integration**: Powered by moonshotai/kimi-k2:free model via OpenRouter
 - **Fallback Mechanisms**: Works even when LLM is unavailable
 - **Structured Fact Extraction**: Parses locations, dates, restaurants from messages
 - **Local Model Storage**: All models downloaded to `data/models/` folder
@@ -63,7 +63,7 @@ Visit `http://localhost:8000` to use the chatbot interface.
 │               ▼                     │
 │  ┌─────────────────────────────┐   │
 │  │   Answer Generation         │   │
-│  │  - Gemini LLM (primary)     │   │
+│  │  - OpenRouter LLM (primary)  │   │
 │  │  - Structured Fallback      │   │
 │  └─────────────────────────────┘   │
 └─────────────────────────────────────┘
@@ -240,26 +240,23 @@ curl http://localhost:8000/api/stats
 Create a `.env` file in the project root:
 
 ```env
-# Required: Gemini API keys (comma-separated for rotation)
-GEMINI_API_KEYS=key1,key2,key3
-
-# Or use numbered keys
-GEMINI_API_KEY_1=your_first_key
-GEMINI_API_KEY_2=your_second_key
-GEMINI_API_KEY_3=your_third_key
+# Required: OpenRouter API key
+OPENROUTER_API_KEY=your_api_key_here
 
 # Optional
 PORT=8000
 LOG_LEVEL=INFO
 ```
 
-### Getting Gemini API Keys
+### Getting OpenRouter API Key
 
-1. Visit [Google AI Studio](https://ai.google.dev)
-2. Sign in with your Google account
-3. Click "Get API Key"
-4. Create a new API key or use existing ones
-5. Add multiple keys for automatic rotation (recommended)
+1. Visit [OpenRouter.ai](https://openrouter.ai)
+2. Sign in or create an account
+3. Navigate to API Keys section
+4. Create a new API key
+5. Copy the key and add it to your `.env` file
+
+**Note**: The system uses the `moonshotai/kimi-k2:free` model, which is available for free on OpenRouter.
 
 ## 🐳 Docker Deployment
 
@@ -309,7 +306,7 @@ curl http://localhost:8000/api/health
 - **FastAPI** (0.115.6): Modern web framework for building APIs
 - **Sentence Transformers** (3.3.1): Generate semantic embeddings
 - **FAISS** (1.9.0.post1): Fast vector similarity search
-- **Google Generative AI** (0.8.3): Gemini LLM for answer generation
+- **OpenRouter API**: LLM integration via OpenRouter (moonshotai/kimi-k2:free model)
 - **Uvicorn** (0.34.0): ASGI server for FastAPI
 
 ### Supporting Libraries
@@ -327,7 +324,7 @@ See `requirements.txt` for complete list with versions.
 2. Connect to Render.com
 3. Create a new Web Service
 4. Set environment variables:
-   - `GEMINI_API_KEYS` or `GEMINI_API_KEY_1`, `GEMINI_API_KEY_2`, etc.
+   - `OPENROUTER_API_KEY` - Your OpenRouter API key
 5. Deploy!
 
 See [RENDER_DEPLOYMENT.md](docs/RENDER_DEPLOYMENT.md) for detailed instructions.
@@ -340,8 +337,14 @@ docker build -t aurora-qa .
 
 # Run
 docker run -p 8000:8000 \
-  -e GEMINI_API_KEYS=your_keys_here \
-  aurora-qa
+  -e OPENROUTER_API_KEY=your_api_key_here \
+  vivektiwari007/aurora-qa-system:latest
+
+# Or pull from Docker Hub
+docker pull vivektiwari007/aurora-qa-system:latest
+docker run -p 8000:8000 \
+  -e OPENROUTER_API_KEY=your_api_key_here \
+  vivektiwari007/aurora-qa-system:latest
 ```
 
 ## 📝 Key Features Explained
@@ -362,14 +365,9 @@ docker run -p 8000:8000 \
 - Classifies messages as requests, preferences, or gratitude
 
 ### 4. Conversational Answer Generation
-- Primary: Uses Gemini LLM for natural language generation
+- Primary: Uses OpenRouter API with moonshotai/kimi-k2:free model for natural language generation
 - Fallback: Structured template-based answers when LLM unavailable
 - Filters out irrelevant information (generic thanks, etc.)
-
-### 5. API Key Rotation
-- Supports multiple Gemini API keys
-- Automatically rotates through keys on each request
-- Helps stay within rate limits
 
 ## 🔍 Troubleshooting
 
@@ -393,10 +391,10 @@ PORT=8001 python src/main.py
 
 **API key errors:**
 ```bash
-# Verify .env file exists and has keys
+# Verify .env file exists and has API key
 cat .env
 # Check environment variables are loaded
-python -c "import os; print(os.getenv('GEMINI_API_KEYS'))"
+python -c "import os; print(os.getenv('OPENROUTER_API_KEY'))"
 ```
 
 **Slow startup:**
@@ -425,12 +423,14 @@ This project is provided as-is for assessment purposes.
 
 ## 🔗 Links
 
-- [Google AI Studio](https://ai.google.dev) - Get Gemini API keys
+- [OpenRouter.ai](https://openrouter.ai) - Get OpenRouter API key
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Sentence Transformers](https://www.sbert.net/)
 - [FAISS](https://github.com/facebookresearch/faiss)
 
 ---
 
-**Built with ❤️ using FastAPI, FAISS, and Gemini AI**
+**Built with ❤️ using FastAPI, FAISS, and OpenRouter AI**
+
+**Docker Image**: `vivektiwari007/aurora-qa-system:latest` - Available on [Docker Hub](https://hub.docker.com/r/vivektiwari007/aurora-qa-system)
 

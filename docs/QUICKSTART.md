@@ -8,14 +8,15 @@ git clone <your-repo>
 cd aurora_assessment
 ```
 
-### 2. Get Gemini API Keys
-Visit https://ai.google.dev and click "Get API Key" (free, no credit card)
+### 2. Get OpenRouter API Key
+Visit https://openrouter.ai and create an account (free)
+Navigate to API Keys section and create a new API key
 
 ### 3. Setup Environment
 ```bash
 cp .env.example .env
-# Edit .env and add your keys:
-# GEMINI_API_KEYS=key1,key2,key3
+# Edit .env and add your API key:
+# OPENROUTER_API_KEY=your_api_key_here
 ```
 
 ### 4. Setup Virtual Environment & Install
@@ -61,6 +62,14 @@ docker build -f Dockerfile -t aurora-qa ..
 docker run -p 8000:8000 --env-file ../.env aurora-qa
 ```
 
+### Using Docker Hub Image
+```bash
+docker pull vivektiwari007/aurora-qa-system:latest
+docker run -p 8000:8000 \
+  -e OPENROUTER_API_KEY=your_api_key_here \
+  vivektiwari007/aurora-qa-system:latest
+```
+
 ---
 
 ## 🚀 Deploy to Render.com (Free)
@@ -80,7 +89,7 @@ git push origin main
 ### 3. Configure
 - **Build Command:** (auto)
 - **Start Command:** `cd src && python main.py`
-- **Environment:** Add `GEMINI_API_KEYS=key1,key2,key3`
+- **Environment:** Add `OPENROUTER_API_KEY=your_api_key_here`
 
 ### 4. Deploy
 Click "Create Web Service" and wait ~3-5 minutes
@@ -115,20 +124,22 @@ aurora_assessment/
 
 ---
 
-## 🔑 Gemini API Keys
+## 🔑 OpenRouter API Key
 
-### Get Free Keys
-1. Go to https://ai.google.dev
-2. Click "Get API Key"
-3. Create up to 60 keys (free forever!)
+### Get Free API Key
+1. Go to https://openrouter.ai
+2. Sign in or create an account
+3. Navigate to API Keys section
+4. Create a new API key
+5. Copy the key and add it to your `.env` file
 
-### Configure Multiple Keys
+### Configure API Key
 Add in `.env`:
 ```
-GEMINI_API_KEYS=AIzaSy...,AIzaSy...,AIzaSy...
+OPENROUTER_API_KEY=your_api_key_here
 ```
 
-System rotates through them automatically!
+**Note**: The system uses the `moonshotai/kimi-k2:free` model, which is available for free on OpenRouter.
 
 ---
 
@@ -192,10 +203,10 @@ curl http://localhost:8000/api/stats
 
 ## 🚨 Troubleshooting
 
-### API keys not found?
+### API key not found?
 - Check `.env` file exists
-- Verify `GEMINI_API_KEYS` is set
-- Keys should be comma-separated
+- Verify `OPENROUTER_API_KEY` is set
+- Get your API key from https://openrouter.ai
 
 ### Connection error?
 - Check internet connection
@@ -222,7 +233,7 @@ curl http://localhost:8000/api/stats
 ## 📊 What You Get
 
 ✅ Chatbot interface for asking questions  
-✅ Automatic Gemini API key rotation  
+✅ OpenRouter integration with moonshotai/kimi-k2:free model  
 ✅ Semantic search with embeddings  
 ✅ Answer generation with confidence scores  
 ✅ Source attribution  
@@ -237,7 +248,7 @@ curl http://localhost:8000/api/stats
 2. ✅ Deploy to Render.com
 3. ✅ Share your deployment URL
 4. ✅ Monitor performance
-5. ✅ Add more Gemini keys if needed
+5. ✅ Monitor API usage on OpenRouter dashboard
 
 ---
 

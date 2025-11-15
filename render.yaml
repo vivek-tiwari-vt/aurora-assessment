@@ -13,9 +13,8 @@ services:
       - key: LOG_LEVEL
         value: INFO
       
-      # Add your Gemini API keys here
-      # Format: key1,key2,key3
-      - key: GEMINI_API_KEYS
+      # Add your OpenRouter API key here
+      - key: OPENROUTER_API_KEY
         scope: RUN
         sync: false
     

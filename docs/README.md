@@ -1,6 +1,6 @@
 # Aurora Q&A System
 
-An intelligent question-answering system powered by FastAPI, Sentence Transformers, FAISS, and Google Gemini AI.
+An intelligent question-answering system powered by FastAPI, Sentence Transformers, FAISS, and OpenRouter AI.
 
 ## 🏗️ Project Structure
 
@@ -34,7 +34,7 @@ aurora_assessment/
 
 - **RAG-based Q&A**: Retrieval-Augmented Generation for accurate answers
 - **Semantic Search**: FAISS vector database for fast similarity search
-- **API Key Rotation**: Automatic rotation through multiple Gemini API keys
+- **OpenRouter Integration**: Powered by moonshotai/kimi-k2:free model via OpenRouter
 - **Local Model Storage**: All models downloaded to `data/models/` folder
 - **Modern UI**: Beautiful, responsive chatbot interface
 - **Production Ready**: Docker support and deployment configurations
@@ -52,8 +52,8 @@ source venv/bin/activate
 # 2. Install dependencies
 pip install -r requirements.txt
 
-# 3. Create .env file with your Gemini API keys
-echo "GEMINI_API_KEYS=your_key_here" > .env
+# 3. Create .env file with your OpenRouter API key
+echo "OPENROUTER_API_KEY=your_api_key_here" > .env
 
 # 4. Run the application
 python -m src.main
@@ -66,7 +66,7 @@ Visit `http://localhost:8000` to use the chatbot interface.
 - **FastAPI**: Modern web framework
 - **Sentence Transformers**: Embedding models
 - **FAISS**: Vector similarity search
-- **Google Generative AI**: LLM for answer generation
+- **OpenRouter API**: LLM integration via OpenRouter (moonshotai/kimi-k2:free model)
 - **Uvicorn**: ASGI server
 
 See `requirements.txt` for complete list.
@@ -78,7 +78,7 @@ See `requirements.txt` for complete list.
 Create a `.env` file in the project root:
 
 ```env
-GEMINI_API_KEYS=key1,key2,key3
+OPENROUTER_API_KEY=your_api_key_here
 PORT=8000
 LOG_LEVEL=INFO
 ```
